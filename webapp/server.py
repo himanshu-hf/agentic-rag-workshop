@@ -79,6 +79,7 @@ team_query_engine_tool = QueryEngineTool.from_defaults(
 )
 
 
+
 def get_matches_list():
     """
     Return the list of Matches and their information
@@ -158,6 +159,34 @@ def get_t20_world_cup_stat_insights(stats_type: str, insight_type: str):
     else:
         return "Invalid stats_type"
 
+def compare_players(player1: str, player2: str):
+    """
+    Compare two players' batting and bowling stats for the 2024 T20 World Cup.
+    Args:
+      - player1: Name of the first player
+      - player2: Name of the second player
+    Returns:
+      - Dictionary with both players' stats
+    """
+    # Try to find players in batting and bowling DataFrames
+    batting_stats_1 = batting_df[batting_df["Player"] == player1].to_dict(orient="records")
+    batting_stats_2 = batting_df[batting_df["Player"] == player2].to_dict(orient="records")
+    bowling_stats_1 = bowling_df[bowling_df["Player"] == player1].to_dict(orient="records")
+    bowling_stats_2 = bowling_df[bowling_df["Player"] == player2].to_dict(orient="records")
+
+    return {
+        player1: {
+            "batting": batting_stats_1[0] if batting_stats_1 else "No batting data",
+            "bowling": bowling_stats_1[0] if bowling_stats_1 else "No bowling data",
+        },
+        player2: {
+            "batting": batting_stats_2[0] if batting_stats_2 else "No batting data",
+            "bowling": bowling_stats_2[0] if bowling_stats_2 else "No bowling data",
+        },
+    }
+
+compare_players_tool = FunctionTool.from_defaults(fn=compare_players)
+
 
 get_t20_world_cup_stat_insights_tool = FunctionTool.from_defaults(
     fn=get_t20_world_cup_stat_insights
@@ -182,6 +211,7 @@ class GetAnswerAction:
                 get_series_squad_tool,
                 get_match_scorecard_tool,
                 get_t20_world_cup_stat_insights_tool,
+                compare_players_tool,
             ],
             memory=memory,
             llm=self.llm,
