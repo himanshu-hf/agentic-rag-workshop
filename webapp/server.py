@@ -1,4 +1,5 @@
 import os
+from difflib import get_close_matches
 
 import pandas as pd
 import requests
@@ -159,27 +160,39 @@ def get_t20_world_cup_stat_insights(stats_type: str, insight_type: str):
     else:
         return "Invalid stats_type"
 
+def fuzzy_find_player(player_name, player_list):
+    """
+    Returns the closest match for a player name from the player list using fuzzy matching.
+    """
+    matches = get_close_matches(player_name, player_list, n=1, cutoff=0.6)
+    return matches[0] if matches else None
+
 def compare_players(player1: str, player2: str):
     """
     Compare two players' batting and bowling stats for the 2024 T20 World Cup.
-    Args:
-      - player1: Name of the first player
-      - player2: Name of the second player
-    Returns:
-      - Dictionary with both players' stats
+    Uses fuzzy matching for player names.
     """
+    # Get all player names from batting and bowling DataFrames
+    all_players = set(batting_df["Player"]).union(set(bowling_df["Player"]))
+
+    # Fuzzy match player names
+    matched_player1 = fuzzy_find_player(player1, all_players)
+    matched_player2 = fuzzy_find_player(player2, all_players)
+
     # Try to find players in batting and bowling DataFrames
-    batting_stats_1 = batting_df[batting_df["Player"] == player1].to_dict(orient="records")
-    batting_stats_2 = batting_df[batting_df["Player"] == player2].to_dict(orient="records")
-    bowling_stats_1 = bowling_df[bowling_df["Player"] == player1].to_dict(orient="records")
-    bowling_stats_2 = bowling_df[bowling_df["Player"] == player2].to_dict(orient="records")
+    batting_stats_1 = batting_df[batting_df["Player"] == matched_player1].to_dict(orient="records") if matched_player1 else []
+    batting_stats_2 = batting_df[batting_df["Player"] == matched_player2].to_dict(orient="records") if matched_player2 else []
+    bowling_stats_1 = bowling_df[bowling_df["Player"] == matched_player1].to_dict(orient="records") if matched_player1 else []
+    bowling_stats_2 = bowling_df[bowling_df["Player"] == matched_player2].to_dict(orient="records") if matched_player2 else []
 
     return {
         player1: {
+            "matched_name": matched_player1 if matched_player1 else "No match found",
             "batting": batting_stats_1[0] if batting_stats_1 else "No batting data",
             "bowling": bowling_stats_1[0] if bowling_stats_1 else "No bowling data",
         },
         player2: {
+            "matched_name": matched_player2 if matched_player2 else "No match found",
             "batting": batting_stats_2[0] if batting_stats_2 else "No batting data",
             "bowling": bowling_stats_2[0] if bowling_stats_2 else "No bowling data",
         },
